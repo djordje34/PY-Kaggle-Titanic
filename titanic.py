@@ -11,15 +11,14 @@ def main(train_path, valid_path, save_path):                            #ovi pat
     x_data=pd.read_csv('train.csv',usecols=clist)                       #['Pclass']['Sex','Sex','Age','Sibsp','Parch','Fare'];
     x_data['Age'].fillna((x_data['Age'].mean()), inplace=True)              #isto kao gore, x_data sam koristio
     survived=['Survived']                                                       #linija ispod cita niz argumenata po kojima izdvaja kolone i kopira u novi niz, komanda radi samo sa nizovima
-    y_data=pd.read_csv('train.csv',usecols=survived)                                
+    y_data=pd.read_csv('train.csv',usecols=survived)    
+    x_data.loc[x_data["Sex"] == "male", "Sex"] = 0
+    x_data.loc[x_data["Sex"] == "female", "Sex"] = 1 
+    for x in x_data:
+        x_data[x].fillna((x_data[x].mean()),inplace=True)                     
     x_train=x_data.to_numpy()                                                       #kao ispod
     y_train=y_data.to_numpy()                                               #castujemo u numpy array kako bi mogli da manipulisemo celijama matrice
-    for i in range(len(x_train)):
-        for j in range(len(x_train[0])):                                        #ako je musko 0 ako zenko 1 jer ne znam kako da implementujem da log regresija radi sa stringovima
-            if(x_train[i][j]=="female"):
-                x_train[i][j]=1
-            elif(x_train[i][j]=="male"):
-                x_train[i][j]=0
+
     x_train=x_train.astype(float)                                       #castujemo u float da bi mogli da radimo operacije deljenja i mnozenja bez gubitaka
     y_train=y_train.astype(float)        
     y_train=y_train.flatten()                                           #flatten da castuje y(len(x),1) u 1-D niz y(len(x)), zbog problema sa .dot operaciju sa hipotezom
@@ -30,6 +29,10 @@ def main(train_path, valid_path, save_path):                            #ovi pat
     model.fit(x_train,y_train)
     x_test=pd.read_csv('test.csv',usecols=clist)    
     x_test['Age'].fillna((x_data['Age'].mean()), inplace=True)                  #fillujemo kao gore za test skup
+    x_test.loc[x_test["Sex"] == "male", "Sex"] = 0
+    x_test.loc[x_test["Sex"] == "female", "Sex"] = 1 
+    for x in x_test:
+        x_test[x].fillna((x_test[x].mean()),inplace=True)
     x_test=x_test.to_numpy()                                                        #isto...
 
     for i in range(len(x_test)):
@@ -47,7 +50,12 @@ def main(train_path, valid_path, save_path):                            #ovi pat
     y_predict=np.round(y_predict)               #ako predict>05 preziveo/la ako manje nije
     y_predict=y_predict.astype(int) 
     id_test=id_test.astype(int)                     #castujemo u int
-    np.savetxt('Submission.csv',np.c_[id_test,y_predict],fmt='%d',header="PassengerId,Survived",comments='') #spajamo pomocu np.c_ idtest i ypredict u formatu int 
+    #np.savetxt('Submission.csv',np.c_[id_test,y_predict],fmt='%d',header="PassengerId,Survived",comments='') #spajamo pomocu np.c_ idtest i ypredict u formatu int 
+
+    d={"PassengerId":id_test,"Survived":y_predict}
+    rtn=pd.DataFrame(data=d)
+    rtn.to_csv('Submission.csv',index=None)
+    
 class LogisticRegression():
     
     def __init__(self, step_size=0.01, max_iter=1000000, eps=1e-5,theta_0=None, verbose=True): #izmenjeni logreg sa prvog domaceg, logreg sa Hesijanom najbolji iz razloga sto daje cist decision-boundary za vise argumenata
